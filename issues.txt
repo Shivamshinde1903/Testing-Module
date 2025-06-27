@@ -1,0 +1,11 @@
+register page:
+
+1. division has only three options - A, B, C
+2. roll number validation fails every time cause the value is passed as string instead of number
+3. error messages while registering should be redesigned
+4. The extra fields of email and invitation code are not being forced for teacher role, it's accepting the payload without these values
+5. same collection used for students as well as teacher users
+6. the validation of repeated users should be separated for students and teachers
+
+
+

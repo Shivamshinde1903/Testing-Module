@@ -29,6 +29,7 @@
     "next-auth": "^4.24.11",
     "node-mocks-http": "^1.16.2",
     "nodemailer": "^6.9.16",
+    "pariksha-mitra": "file:",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "swagger-jsdoc": "^6.2.8",
