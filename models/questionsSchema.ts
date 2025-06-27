@@ -1,13 +1,13 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 // Enums for clarity
-enum QuestionTypeEnum {
+export enum QuestionTypeEnum {
   MCQ = "MCQ",
   TRUE_FALSE = "TRUE_FALSE",
   NUMERICAL = "NUMERICAL",
 }
 
-enum AnswerFormatEnum {
+export enum AnswerFormatEnum {
   SINGLE_CHOICE = "SINGLE_CHOICE",
   MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
   TEXT = "TEXT",
@@ -45,7 +45,7 @@ interface IQuestion extends Document {
   fk_chapter_id: mongoose.Types.ObjectId;
   fk_exercise_id: mongoose.Types.ObjectId;
   questionText: string;
-  questionDescription: string,
+  questionDescription: string;
   questionType: QuestionTypeEnum;
   answerFormat: AnswerFormatEnum;
   options?: string[];

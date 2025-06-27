@@ -1,7 +1,3 @@
-import AddOptionModal from './AddOptionModal';
-import clsx from 'clsx';
-import { DropdownProps, DropdownItem } from '@/utils/types';
-import '@/styles/scrollbar.css';
 import React, {
   FC,
   useState,
@@ -10,6 +6,22 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import clsx from "clsx";
+import AddOptionModal from "./AddOptionModal";
+import { DropdownProps, DropdownItem } from "@/utils/types";
+import "@/styles/scrollbar.css";
+
+// Helper functions to normalize items.
+function normalizeDynamicItems(items: DropdownItem[]): DropdownItem[] {
+  return items;
+}
+
+function normalizeStaticItems(items: string[]): DropdownItem[] {
+  return items.map((item) => ({
+    id: item,
+    name: item,
+  }));
+}
 
 const Dropdown: FC<DropdownProps> = ({
   items,
@@ -27,20 +39,20 @@ const Dropdown: FC<DropdownProps> = ({
   allowAddOption = false,
   allowAddOptionText = "Add new option",
   onAddOption,
-  isDynamic = false, // Default to false
-  disabled = false
+  isDynamic = false,
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selected, setSelected] = useState<string | number | null>(
     controlledSelected ?? defaultValue ?? null
   );
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Update selected state based on controlledSelected and defaultValue
+  // Update internal selection when controlled props change.
   useEffect(() => {
     if (controlledSelected !== undefined) {
       setSelected(controlledSelected);
@@ -49,14 +61,14 @@ const Dropdown: FC<DropdownProps> = ({
     }
   }, [defaultValue, controlledSelected]);
 
-  // Synchronize internal options state with items prop
-  const [options, setOptions] = useState<DropdownItem[]>(items);
+  // Use separate helper functions to normalize items.
+  const normalizedOptions: DropdownItem[] = useMemo(() => {
+    return isDynamic
+      ? normalizeDynamicItems(items as DropdownItem[])
+      : normalizeStaticItems(items as string[]);
+  }, [items, isDynamic]);
 
-  useEffect(() => {
-    setOptions(items);
-  }, [items]);
-
-  // Memoize final options, including the "Add new option" if allowed
+  // Prepend "Add new option" if allowed.
   const finalOptions = useMemo(() => {
     const safeText =
       typeof allowAddOptionText === "string" ||
@@ -66,13 +78,13 @@ const Dropdown: FC<DropdownProps> = ({
 
     if (allowAddOption) {
       const addOptionItem: DropdownItem = {
-        id: 'add_option',
+        id: "add_option",
         name: safeText.toString(),
       };
-      return [addOptionItem, ...options];
+      return [addOptionItem, ...normalizedOptions];
     }
-    return options;
-  }, [allowAddOption, allowAddOptionText, options]);
+    return normalizedOptions;
+  }, [allowAddOption, allowAddOptionText, normalizedOptions]);
 
   const toggleDropdown = useCallback(() => {
     if (!disabled) {
@@ -80,19 +92,16 @@ const Dropdown: FC<DropdownProps> = ({
     }
   }, [disabled]);
 
-  const handleClickOutside = useCallback(
-    (event: MouseEvent) => {
-      if (
-        listRef.current &&
-        !listRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    },
-    []
-  );
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (
+      listRef.current &&
+      !listRef.current.contains(event.target as Node) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(event.target as Node)
+    ) {
+      setIsOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -106,17 +115,16 @@ const Dropdown: FC<DropdownProps> = ({
     };
   }, [isOpen, handleClickOutside]);
 
+  // Removed the extra "index" parameter to fix the ESLint no-unused-vars warning.
   const handleOptionClick = useCallback(
     (option: DropdownItem) => {
-      if (allowAddOption && option.id === 'add_option') {
+      if (allowAddOption && option.id === "add_option") {
         setIsOpen(false);
         setShowModal(true);
         return;
       }
 
-      // Handle selection
       const selectedId = option.id;
-
       if (controlledSelected !== undefined) {
         onSelect?.(selectedId);
         onChange?.(selectedId);
@@ -125,7 +133,6 @@ const Dropdown: FC<DropdownProps> = ({
         onSelect?.(selectedId);
         onChange?.(selectedId);
       }
-
       setIsOpen(false);
       buttonRef.current?.focus();
     },
@@ -150,7 +157,7 @@ const Dropdown: FC<DropdownProps> = ({
       } else if (event.key === "Enter" || event.key === " ") {
         if (highlightedIndex >= 0 && highlightedIndex < finalOptions.length) {
           const option = finalOptions[highlightedIndex];
-          handleOptionClick(option, highlightedIndex);
+          handleOptionClick(option);
         }
       } else if (event.key === "Tab") {
         setIsOpen(false);
@@ -162,41 +169,50 @@ const Dropdown: FC<DropdownProps> = ({
   const handleModalConfirm = useCallback(
     (newValue: string) => {
       if (allowAddOption && isDynamic) {
-        const existingOption = options.find(opt => opt.name === newValue);
+        const existingOption = normalizedOptions.find(
+          (opt) => opt.name === newValue
+        );
         if (!existingOption) {
           const newOptionName = newValue.trim();
           if (newOptionName) {
-            onAddOption?.(newOptionName); // Pass only the name as string
+            onAddOption?.(newOptionName);
           }
         }
       }
       setShowModal(false);
     },
-    [options, onAddOption, isDynamic, allowAddOption]
+    [normalizedOptions, onAddOption, isDynamic, allowAddOption]
   );
 
   const handleModalClose = useCallback(() => {
     setShowModal(false);
   }, []);
 
+  // NOTE on Accessibility (SonarLint S6819 & S6819):
+  // SonarLint suggests using native <option> elements (inside a <select>) rather than
+  // custom elements with role="option". If native behavior is acceptable, consider refactoring
+  // the dropdown to use a <select> element with <option> children.
   const renderedOptions = useMemo(() => {
     return finalOptions.map((option, index) => {
       const isSelected = selected === option.id;
       const isHighlighted = highlightedIndex === index;
-      const isAddOptionText = allowAddOption && option.id === 'add_option';
+      const isAddOptionText = allowAddOption && option.id === "add_option";
 
       return (
         <div
           key={`${option.id}-${index}`}
           role="option"
+          tabIndex={0}
           aria-selected={isSelected}
-          onClick={() => handleOptionClick(option, index)}
-          onKeyDown={(e) =>
-            e.key === "Enter" && handleOptionClick(option, index)
-          }
+          onClick={() => handleOptionClick(option)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handleOptionClick(option);
+            }
+          }}
           onMouseEnter={() => setHighlightedIndex(index)}
           className={clsx(
-            "cursor-pointer text-lg",
+            "cursor-pointer text-lg truncate",
             isSelected && "bg-blue-100",
             !isSelected && isHighlighted && "bg-blue-50",
             !isSelected && !isHighlighted && "bg-white",
@@ -212,31 +228,26 @@ const Dropdown: FC<DropdownProps> = ({
     });
   }, [finalOptions, selected, highlightedIndex, handleOptionClick, allowAddOption]);
 
-  // Determine the display value
   const displayValue = useMemo(() => {
     if (isDynamic) {
-      const selectedItem = options.find((opt) => opt.id === selected);
+      const selectedItem = normalizedOptions.find(
+        (opt) => opt.id === selected
+      );
       return selectedItem ? selectedItem.name : "-";
     } else {
       return selected ?? "-";
     }
-  }, [isDynamic, options, selected]);
+  }, [isDynamic, normalizedOptions, selected]);
 
   return (
-    <div
-      className={clsx(
-        "laila-regular relative w-full",
-        className,
-        containerClass
-      )}
-    >
+    <div className={clsx("laila-regular relative w-full", className, containerClass)}>
       <button
         ref={buttonRef}
         onClick={toggleDropdown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={id ? `${id}-listbox` : "dropdown-listbox"}
-        disabled={disabled} // Apply disabled attribute
+        disabled={disabled}
         className={clsx(
           "mt-2 flex items-center",
           buttonBgColor,
@@ -245,14 +256,13 @@ const Dropdown: FC<DropdownProps> = ({
           buttonBorderColor,
           "w-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500",
           "h-[50px] text-left",
-          disabled && "opacity-50 cursor-not-allowed" // Add styles for disabled state
+          disabled && "opacity-50 cursor-not-allowed"
         )}
       >
-        <span className="mr-2 flex-grow text-xl">{label}</span>
-        <div className="w-[80%] h-9 bg-white text-lg rounded-lg flex items-center justify-center text-black mr-2 overflow-hidden whitespace-nowrap text-ellipsis">
-          {displayValue}
+        <span className="mr-1 flex-grow text-xl">{label}</span>
+        <div className="w-[80%] text-ellipsis h-9 bg-white text-lg rounded-lg flex items-center justify-center text-black mr-2 overflow-hidden whitespace-nowrap">
+          <p className="truncate ml-1">{displayValue}</p>
         </div>
-
         <svg
           className={clsx(
             "w-4 h-4 transform transition-transform duration-200",
@@ -297,8 +307,7 @@ const Dropdown: FC<DropdownProps> = ({
       />
     </div>
   );
-}
+};
 
 Dropdown.displayName = "Dropdown";
-
 export default Dropdown;
