@@ -17,10 +17,10 @@ interface RegisterRequestBody {
   email?: string;
   invitationId?: string;
   rollNo?: number;
-  division?: division;
+  division?: divisionEnum;
 }
 
-enum division {
+enum divisionEnum {
   A = "A",
   B = "B",
   C = "C",
@@ -159,6 +159,8 @@ enum division {
  *                   description: Detailed error message
  */
 
+
+
 export async function POST(req: Request) {
   await connectDb();
 
@@ -188,6 +190,24 @@ export async function POST(req: Request) {
           status: 404,
         }
       );
+    }
+
+    // Division validation: Only for students, must be one of the enum values
+    
+    if (role === ROLE.Student) {
+      
+      if (!division || !Object.values(divisionEnum).includes(division as divisionEnum)) {
+        
+        return NextResponse.json(
+          {
+            message: "Invalid or missing division for student",
+            division,
+          },
+          {
+            status: 400,
+          }
+        );
+      }
     }
     
     if(invitationId && (invitationId !== process.env.INVITATION_ID)) {
