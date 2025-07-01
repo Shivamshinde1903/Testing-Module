@@ -247,18 +247,24 @@ const Register = () => {
                 />
               </div>
               <div className="flex flex-col">
-                <label htmlFor="division" className="text-xl font-light mb-2">
-                  विभाजन
-                </label>
-                <input
-                  id="division"
-                  className="p-3 border border-black shadow-md rounded-2xl"
-                  type="text"
-                  placeholder="Division"
-                  value={division}
-                  onChange={(e) => setDivision(e.target.value)}
-                />
-              </div>
+              <label htmlFor="division" className="text-xl font-light mb-2">
+                विभाजन
+              </label>
+              <select
+                id="division"
+                className="p-3 border border-black shadow-md rounded-2xl"
+                value={division}
+                onChange={(e) => setDivision(e.target.value)}
+              >
+                <option value="" disabled>
+                  Division निवडा
+                </option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
 
               {/* Teacher-specific Fields */}
               {role === ROLE.Teacher && (

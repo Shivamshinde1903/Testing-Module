@@ -25,7 +25,7 @@ export const registerSchema = z.object({
     .optional(),
   invitationId: z.string().optional(),
   rollNo: z.number().optional(),
-  division: z.enum(["A", "B", "C"]).optional(),
+  division: z.enum(["A", "B", "C", "D"]).optional(),
 });
 
 export type RegisterSchemaTypes = z.infer<typeof registerSchema>;

@@ -6,6 +6,7 @@ register page:
 4. The extra fields of email and invitation code are not being forced for teacher role, it's accepting the payload without these values
 5. same collection used for students as well as teacher users
 6. the validation of repeated users should be separated for students and teachers
+7. same roll number students are allowed to register.
 
 
 

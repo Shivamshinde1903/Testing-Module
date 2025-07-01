@@ -27,6 +27,7 @@ enum division {
   A = "A",
   B = "B",
   C = "C",
+  D = "D",
 }
 
 const userSchema: Schema<User> = new Schema<User>({
