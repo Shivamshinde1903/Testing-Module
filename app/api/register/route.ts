@@ -208,6 +208,32 @@ export async function POST(req: Request) {
           }
         );
       }
+
+      // Roll number uniqueness validation for the same school and division
+      if (rollNo !== undefined && rollNo !== null) {
+        const existingStudent = await userModel.findOne({
+          schoolId,
+          division,
+          rollNo,
+          role: ROLE.Student,
+        });
+
+        if (existingStudent) {
+          return NextResponse.json(
+            {
+              message: "A student with this roll number already exists in the selected school and division.",
+              schoolId,
+              division,
+              rollNo,
+            },
+            {
+              status: 409,
+            }
+          );
+        }
+      }
+
+      
     }
     
     if(invitationId && (invitationId !== process.env.INVITATION_ID)) {
